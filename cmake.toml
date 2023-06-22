@@ -1,0 +1,43 @@
+# Reference: https://build-cpp.github.io/cmkr/cmake-toml
+[project]
+name = "AEBoost"
+msvc-runtime = "static" # /MT
+
+[fetch-content.raylib]
+git = "https://github.com/raysan5/raylib"
+tag = "4.5.0"
+
+[fetch-content.raygui]
+git = "https://github.com/raysan5/raygui"
+tag = "3.6"
+
+[target.AEBoost]
+type = "executable"
+sources = [
+	"Manager/*.cpp", "Manager/*.h",
+	"Mods/*.cpp", "Mods/*.h",
+	"AE/*.cpp", "AE/*.h",
+	"Manager/AEBoost.rc",
+	"Mods/ModList.txt"
+]
+include-directories = [
+	"Manager",
+	"AE",
+	"Mods",
+	"${phnt_SOURCE_DIR}",
+	"${raylib_SOURCE_DIR}/src",
+	"${raygui_SOURCE_DIR}/src"
+]
+msvc.compile-options = [
+	"/GS-",		# no stack cookies
+	"/Gy",		# function level linking
+	"/Ob1",		# ensure __forceinline is honored
+	"/Oi-",		# disable intrinsic functions (allowing us to inline memcpy)
+	"/EHs-",	# disable exception handling
+]
+msvc.link-options = [
+	"/ignore:4078",
+	"/INCREMENTAL:NO",
+	"/SUBSYSTEM:WINDOWS",
+]
+link-libraries = ["winmm", "user32.dll", "raylib"]
