@@ -1,6 +1,6 @@
 ## Download
 
-AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.0/AEBoost.exe). You may optionally build it yourself.
+AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.0/AEBoost.zip). You may optionally build it yourself.
 
 ![](Media/boost.png)
 
