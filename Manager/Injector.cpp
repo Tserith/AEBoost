@@ -339,6 +339,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     COM com;
     WMI wmi(com);
     ProcessCreation newProcesses(wmi);
+    HANDLE mutex;
     LONG pid;
     HANDLE snapshot;
     PROCESSENTRY32W process;
@@ -346,6 +347,14 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     const int windowWidth = 300;
     const int windowHeight = 50 + ((sizeof(g_Mods) + 1) / 2) * 80;
     const char* windowName = "AE Boost";
+
+    // don't allow two open at a time
+    mutex = CreateMutex(nullptr, false, "AEBoost");
+    if (nullptr != mutex && ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        CloseHandle(mutex);
+        return 0;
+    }
 
     raylib::SetConfigFlags(raylib::FLAG_WINDOW_UNDECORATED);
     raylib::InitWindow(windowWidth, windowHeight, windowName);
@@ -435,7 +444,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         auto wasBoosting = boosting;
         boosting = raylib::GuiToggle({80,((i/2) + (i%2))*40.0f + 70,140,40}, toggleText, wasBoosting);
 
-        if (!wasBoosting && boosting)
+        bool modsToEnable = false;
+        HANDLE mutex = nullptr;
+        i = 0;
+#define MOD(Name) if (g_Mods[i] && (mutex = CheckModNotEnabled(i))) {CloseHandle(mutex); modsToEnable = true;} i++;
+#include <ModList.txt>
+
+        if (!wasBoosting && boosting && modsToEnable)
         {
             // inject into existing clients
             snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
