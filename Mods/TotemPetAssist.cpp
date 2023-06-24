@@ -1,19 +1,52 @@
 #include <Mods.h>
 
-static void TotemPetAssist(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
+struct TotemPetAssistContext
 {
-    u32 petId = 0;
+    u32 petId[2];
+};
 
-    if (Packet->header.size >= 4 && Packet->body.action == 0x5b) // what even is this?
+// send here instead of inside recv hook so we don't break state
+static void TotemPetAssistSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
+{
+    auto volatile ctx = (TotemPetAssistContext*)FIXUP_VALUE;
+
+    if (ctx->petId[0])
     {
-        memcpy(&petId, (u8*)&Packet->body + 1, 3);
-        SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, petId);
+        SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, ctx->petId[0]);
 
-        if (Packet->header.size >= 8 && *((u8*)&Packet->body.action + 4) == 0x5b)
+        if (ctx->petId[1])
         {
-            memcpy(&petId, (u8*)&Packet->body + 5, 3);
-            SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, petId);
+            SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, ctx->petId[1]);
         }
+
+        memset(ctx, 0, sizeof(*ctx));
+    }
+}
+
+static void TotemPetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* Packet)
+{
+    auto volatile ctx = (TotemPetAssistContext*)FIXUP_VALUE;
+    u32* petId = nullptr;
+
+    if (ctx->petId[0])
+    {
+        if (ctx->petId[1])
+        {
+            return;
+        }
+        else
+        {
+            petId = &ctx->petId[1];
+        }
+    }
+    else
+    {
+        petId = &ctx->petId[0];
+    }
+
+    if (0x1e == Packet->size && 0x27 == *(u16*)&Packet->data[3] && 0 == Packet->data[5])
+    {
+        memcpy(petId, Packet->data, 3);
     }
 }
 
@@ -22,5 +55,20 @@ END_INJECT_CODE;
 
 void InitTotemPetAssist()
 {
-    RegisterForSendHook(TotemPetAssist, 0);
+    TotemPetAssistContext context;
+    u32 remoteContext = 0;
+
+    memset(&context, 0, sizeof(context));
+
+    AllocContext(&context, sizeof(context), &remoteContext);
+    if (0 == remoteContext)
+    {
+        goto fail;
+    }
+
+    RegisterForSendHook(TotemPetAssistSend, remoteContext);
+    RegisterForRecvHook(TotemPetAssistRecv, remoteContext);
+
+fail:
+    return;
 }

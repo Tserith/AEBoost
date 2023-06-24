@@ -48,11 +48,55 @@ bool g_Mods[] = {
 #undef MOD
 };
 
+// remember to close handle if not null (mod not boosting)
+static HANDLE CheckModNotEnabled(int ModId)
+{
+    char temp[100];
+    HANDLE mutex = nullptr;
+
+    snprintf(temp, sizeof(temp), "aeb%i", ModId);
+
+    mutex = CreateMutex(nullptr, false, temp);
+
+    if (nullptr != mutex && ERROR_ALREADY_EXISTS == GetLastError())
+    {
+        CloseHandle(mutex);
+        mutex = nullptr;
+    }
+
+    return mutex;
+}
+
+bool MarkModEnabled(int ModId)
+{
+    HANDLE mutex = CheckModNotEnabled(ModId);
+
+    if (nullptr != mutex)
+    {
+        DuplicateHandle(GetCurrentProcess(), mutex, g_Process, nullptr, 0, false, DUPLICATE_SAME_ACCESS);
+        CloseHandle(mutex);
+        return false;
+    }
+
+    return true;
+}
+
 static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
 {
     HANDLE snapshot;
     MODULEENTRY32W module;
     SIZE_T bytesWritten = 0;
+    bool modsToEnable = false;
+    HANDLE mutex = nullptr;
+    u32 i = 0;
+
+#define MOD(Name) if (g_Mods[i] && (mutex = CheckModNotEnabled(i))) {CloseHandle(mutex); modsToEnable = true;} i++;
+#include <ModList.txt>
+#undef MOD
+    if (!modsToEnable)
+    {
+        return 0;
+    }
 
     snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPMODULE, Pid);
     if (INVALID_HANDLE_VALUE != snapshot)
@@ -301,39 +345,6 @@ void InlineHook(u8* Pattern, u8 PatternLen, void* Hook, u32 FixupValue)
     }
 }
 
-// remember to close handle if not null (mod not boosting)
-static HANDLE CheckModNotEnabled(int ModId)
-{
-    char temp[100];
-    HANDLE mutex = nullptr;
-
-    snprintf(temp, sizeof(temp), "aeb%i", ModId);
-
-    mutex = CreateMutex(nullptr, false, temp);
-
-    if (nullptr != mutex && ERROR_ALREADY_EXISTS == GetLastError())
-    {
-        CloseHandle(mutex);
-        mutex = nullptr;
-    }
-
-    return mutex;
-}
-
-bool MarkModEnabled(int ModId)
-{
-    HANDLE mutex = CheckModNotEnabled(ModId);
-
-    if (nullptr != mutex)
-    {
-        DuplicateHandle(GetCurrentProcess(), mutex, g_Process, nullptr, 0, false, DUPLICATE_SAME_ACCESS);
-        CloseHandle(mutex);
-        return false;
-    }
-
-    return true;
-}
-
 int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine, int nCmdShow)
 {
     COM com;
@@ -354,6 +365,20 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     {
         CloseHandle(mutex);
         return 0;
+    }
+
+    // which mods are currently enabled?
+    for (u16 i = 0; i < sizeof(g_Mods); i++)
+    {
+        auto mutex = CheckModNotEnabled(i);
+        if (mutex)
+        {
+            CloseHandle(mutex);
+        }
+        else
+        {
+            g_Mods[i] = true;
+        }
     }
 
     raylib::SetConfigFlags(raylib::FLAG_WINDOW_UNDECORATED);
@@ -411,23 +436,13 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
         raylib::DrawText("Created by Inev", windowWidth - 87, windowHeight - 12, 10, raylib::MAGENTA);
 
-        for (u16 i = 0; i < sizeof(g_Mods); i++)
-        {
-            auto mutex = CheckModNotEnabled(i);
-            if (mutex)
-            {
-                CloseHandle(mutex);
-            }
-            else
-            {
-                g_Mods[i] = true;
-            }
-        }
-
         int i = 0;
+        HANDLE mutex = nullptr;
         bool temp;
-#define MOD(Name) temp = raylib::GuiCheckBox({ (i%2==1) * 135.0f + 35, (i / 2) * 50.0f + 45, 35, 35 }, ""#Name, g_Mods[i]); if (!boosting) g_Mods[i] = temp; i++;
-            #include <ModList.txt>
+#define MOD(Name) temp = raylib::GuiCheckBox({ (i%2==1) * 135.0f + 35, (i / 2) * 50.0f + 45, 35, 35 }, ""#Name, g_Mods[i]); \
+if (!boosting && (temp || (mutex = CheckModNotEnabled(i)))) \
+    { if (mutex) CloseHandle(mutex); g_Mods[i] = temp; }i++; mutex = nullptr;
+         #include <ModList.txt>
 #undef MOD
 
         auto toggleText = "";
@@ -444,13 +459,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         auto wasBoosting = boosting;
         boosting = raylib::GuiToggle({80,((i/2) + (i%2))*40.0f + 70,140,40}, toggleText, wasBoosting);
 
-        bool modsToEnable = false;
-        HANDLE mutex = nullptr;
-        i = 0;
-#define MOD(Name) if (g_Mods[i] && (mutex = CheckModNotEnabled(i))) {CloseHandle(mutex); modsToEnable = true;} i++;
-#include <ModList.txt>
-
-        if (!wasBoosting && boosting && modsToEnable)
+        if (!wasBoosting && boosting)
         {
             // inject into existing clients
             snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
