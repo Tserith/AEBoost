@@ -53,8 +53,8 @@ static void AutoRune(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packe
                     }
                     else
                     {
-                        char runeError[] = { 'U', 'n', 'a', 'b', 'l', 'e', ' ', 't', 'o', ' ', 'f', 'i', 'n', 'd', ' ', 'r', 'u', 'n', 'e', ' ', '%', 'x', '\n', '\0' };
-                        DebugPrint(runeError, spell->spellClass + RUNE_TYPE_OFFSET);
+                        char runeError[] = { 'R', 'u', 'n', 'e', ' ', 'm', 'i', 's', 's', 'i', 'n', 'g', ' ', 'f', 'o', 'r', ' ', 'c', 'a', 's', 't', '\0' };
+                        WriteToChatWindow(runeError);
 
                         cancelSend = true;
                     }
@@ -81,6 +81,11 @@ static void AutoRune(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packe
                             ChangeRune(&ModCtx->ae, NetCtx, 1 + i, rune->id);
                             reselectSpell = true;
                             maxLeftToRefresh--;
+                        }
+                        else
+                        {
+                            char runeError[] = { 'C', 'a', 'n', 'n', 'o', 't', ' ', 'r', 'e', 'f', 'r', 'e', 's', 'h', ' ', 'r', 'u', 'n', 'e', '\0' };
+                            WriteToChatWindow(runeError);
                         }
                     }
                 }

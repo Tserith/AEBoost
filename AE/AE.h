@@ -36,6 +36,7 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
+#define VERSION "1.0.0"
 #define AE_BUILD 149
 #define GLOBAL_PTR (uint8_t**)0x73FDB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A09BC // passed to rune function

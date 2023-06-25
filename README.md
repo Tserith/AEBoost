@@ -2,13 +2,15 @@
 
 AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.0/AEBoost.zip). You may optionally build it yourself.
 
+*Note: A relaunch of the game will disable all mods unless AEBoost is currently running with "Boost" selected.*
+
 ![](Media/boost.png)
 
 ## TotemPetAssist
 
 Pets spawned with a totem default to assist mode.
 
-*Note: This will not be displayed in the follower window*
+*Note: This will not be displayed in the follower window.*
 
 ![](Media/assist.gif)
 
@@ -16,7 +18,7 @@ Pets spawned with a totem default to assist mode.
 
 Spells can be freely cast between rune types. Rune swaps are done automatically when casting a spell of a different type or when low on charges.
 
-*Note: Your current spell will be deselected if a rune change was required for the cast*
+*Note: Your current spell will be deselected if a rune change was required for the cast.*
 
 ![](Media/autorune.gif)
 

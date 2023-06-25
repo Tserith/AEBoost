@@ -434,6 +434,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
 
         exitWindow = raylib::GuiWindowBox({0,0,windowWidth,windowHeight}, windowName);
 
+        raylib::DrawText("Version " VERSION, 5, windowHeight - 12, 10, raylib::ORANGE);
         raylib::DrawText("Created by Inev", windowWidth - 87, windowHeight - 12, 10, raylib::MAGENTA);
 
         int i = 0;
