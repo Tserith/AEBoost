@@ -6,9 +6,9 @@ AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/dow
 
 ![](Media/boost.png)
 
-## TotemPetAssist
+## PetAssist
 
-Pets spawned with a totem default to assist mode.
+Pets default to assist mode.
 
 *Note: This will not be displayed in the follower window.*
 

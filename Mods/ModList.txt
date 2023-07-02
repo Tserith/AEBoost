@@ -1,6 +1,6 @@
 #ifndef NDEBUG
     MOD(NetDebug)
 #endif
-MOD(TotemPetAssist)
+MOD(PetAssist)
 MOD(AutoRune)
 MOD(StepShoot)

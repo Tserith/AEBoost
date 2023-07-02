@@ -1,14 +1,14 @@
 #include <Mods.h>
 
-struct TotemPetAssistContext
+struct PetAssistContext
 {
     u32 petId[2];
 };
 
 // send here instead of inside recv hook so we don't break state
-static void TotemPetAssistSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
+static void PetAssistSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
-    auto volatile ctx = (TotemPetAssistContext*)FIXUP_VALUE;
+    auto volatile ctx = (PetAssistContext*)FIXUP_VALUE;
 
     if (ctx->petId[0])
     {
@@ -23,9 +23,9 @@ static void TotemPetAssistSend(ModContext* ModCtx, NetContext* NetCtx, ClientPac
     }
 }
 
-static void TotemPetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* Packet)
+static void PetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* Packet)
 {
-    auto volatile ctx = (TotemPetAssistContext*)FIXUP_VALUE;
+    auto volatile ctx = (PetAssistContext*)FIXUP_VALUE;
     u32* petId = nullptr;
 
     if (ctx->petId[0])
@@ -51,9 +51,9 @@ static void TotemPetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPac
 
 END_INJECT_CODE;
 
-void InitTotemPetAssist()
+void InitPetAssist()
 {
-    TotemPetAssistContext context;
+    PetAssistContext context;
     u32 remoteContext = 0;
 
     memset(&context, 0, sizeof(context));
@@ -64,8 +64,8 @@ void InitTotemPetAssist()
         goto fail;
     }
 
-    RegisterForSendHook(TotemPetAssistSend, remoteContext);
-    RegisterForRecvHook(TotemPetAssistRecv, remoteContext);
+    RegisterForSendHook(PetAssistSend, remoteContext);
+    RegisterForRecvHook(PetAssistRecv, remoteContext);
 
 fail:
     return;
