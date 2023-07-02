@@ -30,11 +30,7 @@ static void TotemPetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPac
 
     if (ctx->petId[0])
     {
-        if (ctx->petId[1])
-        {
-            return;
-        }
-        else
+        if (!ctx->petId[1])
         {
             petId = &ctx->petId[1];
         }
@@ -44,9 +40,11 @@ static void TotemPetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPac
         petId = &ctx->petId[0];
     }
 
-    if (0x1e == Packet->size && 0x27 == *(u16*)&Packet->data[3] && 0 == Packet->data[5])
+    if (petId && 0x12 == Packet->size &&
+        Action::Pet == (Action)Packet->action &&
+        PetAction::Spawn == (PetAction)Packet->data[0])
     {
-        memcpy(petId, Packet->data, 3);
+        memcpy(petId, &Packet->data[1], 3);
     }
 }
 

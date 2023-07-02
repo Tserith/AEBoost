@@ -3,7 +3,7 @@
 ClientPacket::ClientPacket(PetMode Mode, uint32_t PetId)
 {
     header.size = sizeof(AeBody::action) + sizeof(AeBody::SetPet);
-    body.action = (uint8_t)Action::SetPetMode;
+    body.action = (uint8_t)Action::Pet;
 
     body.SetPet.mode = (uint8_t)Mode;
     memcpy(&body.SetPet.petId, &PetId, sizeof(AeBody::SetPet.petId));
@@ -51,11 +51,37 @@ uint16_t CalcReceiveChecksum(uint8_t* Buffer, uint16_t Len)
     return checksum;
 }
 
-void XorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
+u16 CalcSendChecksum(ClientPacket* Packet)
+{
+    u16 checksum = 0;
+
+    if (Packet->header.size)
+    {
+        auto temp = (u8*)&Packet->body;
+
+        for (int i = 0; i < Packet->header.size; i++)
+        {
+            checksum += temp[i];
+        }
+    }
+
+    return checksum;
+}
+
+void XorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet, bool UndoFailed)
 {
     auto buf = (uint8_t*)Packet + sizeof(AeHeader);
     auto thisPtr = &(*AeCtx->gPtr)[0x10];
-    auto key = *(int32_t*)(thisPtr + NetCtx->xorKeyOffset);
+    int32_t key = 0;
+
+    if (UndoFailed)
+    {
+        key = NetCtx->lastSendKey;
+    }
+    else
+    {
+        key = *(int32_t*)(thisPtr + NetCtx->xorKeyOffset);
+    }
 
     if (key)
     {
@@ -81,12 +107,16 @@ void XorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
             buf[i] ^= key >> 0x10;
         }
 
-        // save key
-        *(int32_t*)(thisPtr + NetCtx->xorKeyOffset) = key;
+        if (!UndoFailed)
+        {
+            // save key
+            *(int32_t*)(thisPtr + NetCtx->xorKeyOffset) = key;
+        }
     }
 }
 
-void UndoXorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
+// returns false if the key is not correct
+bool UndoXorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
     auto buf = (uint8_t*)Packet + sizeof(AeHeader);
     auto thisPtr = &(*AeCtx->gPtr)[0x10];
@@ -125,30 +155,26 @@ void UndoXorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
             buf[i] ^= key >> 0x10;
         }
 
-        // save old key
-        *(int32_t*)(thisPtr + NetCtx->xorKeyOffset) = NetCtx->lastSendKey;
-    }
-}
-
-void CalcSendChecksum(ClientPacket* Packet)
-{
-    Packet->header.checksum = 0;
-
-    if (Packet->header.size)
-    {
-        auto temp = (u8*)&Packet->body;
-
-        for (int i = 0; i < Packet->header.size; i++)
+        if (Packet->header.checksum == CalcSendChecksum(Packet))
         {
-            Packet->header.checksum += temp[i];
+            // save old key
+            *(int32_t*)(thisPtr + NetCtx->xorKeyOffset) = NetCtx->lastSendKey;
+
+            return true; // success
+        }
+        else
+        {
+            XorBuffer(AeCtx, NetCtx, Packet, true);
         }
     }
+
+    return false;
 }
 
 void Send(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
-    CalcSendChecksum(Packet);
-    XorBuffer(AeCtx, NetCtx, Packet);
+    Packet->header.checksum = CalcSendChecksum(Packet);
+    XorBuffer(AeCtx, NetCtx, Packet, false);
 
     auto s = *(u32*)(&(*AeCtx->gPtr)[0x10] + NetCtx->xorKeyOffset - 0x30 + 0x10);
     if (s != -1)
@@ -156,9 +182,6 @@ void Send(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
         auto result = NetCtx->send(s, (const char*)Packet, sizeof(AeHeader) + Packet->header.size, 0);
     }
 }
-
-
-
 
 struct string // std::string
 {

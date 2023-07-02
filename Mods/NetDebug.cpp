@@ -1,20 +1,24 @@
 #include <Mods.h>
 
 // this mod prints all networking traffic to the debugger
-// the game will crash if this is enabled while selecting a server if a debugger is not attached
+// the game may crash if this is enabled while selecting a server if a debugger is not attached
+
+// note that enabling this mod last will prevent it from displaying sends from other mods
 
 static void NetDebugSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
-    char sizeFormat[] =
+    char sendFormat[] =
     {
-        '[', 'S', 'E', 'N', 'D', ']', ' ', 'S', 'i', 'z', 'e', ':', ' ', '0', 'x', '%', '0', '2', 'x', ' ', '|', ' ', '\0'
+        '[', 'S', 'E', 'N', 'D', ']', ' ', 'S', 'i', 'z', 'e', ':', ' ', '0', 'x', '%', '0', '2', 'x', ' ',
+        '|', ' ', '[', '0', 'x', '%', '0', '2', 'x', ']',  ' ', '\0'
     };
     char byteFormat[] = { '%', '0', '2', 'x', ' ', '\0' };
     char newlineFormat[] = { '\n', '\0' };
     
-    DebugPrint(sizeFormat, Packet->header.size);
+    DebugPrint(sendFormat, Packet->header.size, Packet->body.action);
 
-    for (int i = 0; i < Packet->header.size; i++)
+    // send action is in the body while recv action is in header
+    for (int i = 1; i < Packet->header.size; i++)
     {
         DebugPrint(byteFormat, ((unsigned char*)Packet + sizeof(AeHeader))[i]);
     }
@@ -24,14 +28,15 @@ static void NetDebugSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* P
 
 static void NetDebugRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* Packet)
 {
-    char sizeFormat[] =
+    char recvFormat[] =
     {
-        '[', 'R', 'E', 'C', 'V', ']', ' ', 'S', 'i', 'z', 'e', ':', ' ', '0', 'x', '%', '0', '2', 'x', ' ', '|', ' ', '\0'
+        '[', 'R', 'E', 'C', 'V', ']', ' ', 'S', 'i', 'z', 'e', ':', ' ', '0', 'x', '%', '0', '2', 'x', ' ',
+        '|', ' ', '[', '0', 'x', '%', '0', '2', 'x', ']',  ' ', '\0'
     };
     char byteFormat[] = { '%', '0', '2', 'x', ' ', '\0' };
     char newlineFormat[] = { '\n', '\0' };
     
-    DebugPrint(sizeFormat, Packet->size);
+    DebugPrint(recvFormat, Packet->size, Packet->action);
 
     for (int i = 0; i < Packet->size; i++)
     {

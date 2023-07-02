@@ -36,7 +36,7 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.0"
+#define VERSION "1.0.1"
 #define AE_BUILD 149
 #define GLOBAL_PTR (uint8_t**)0x73FDB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A09BC // passed to rune function
@@ -211,10 +211,17 @@ enum class Action
     SplitItem = 0x39,
     UnequipItem = 0x3b,
     NotCombatMode = 0x3e,
+    GetInfo = 0x5b,
     Trade = 0x8d,
-    SetPetMode = 0x95,
+    Pet = 0x95,
     Magic = 0x99,
     SelectItem = 0x9c
+};
+
+enum class PetAction
+{
+    Spawn = 0x2,
+    Target = 0x4
 };
 
 enum class PetMode
@@ -292,16 +299,16 @@ struct ClientPacket
 
 struct ServerPacket
 {
-    u8 id;
+    u8 action;
     u32 size;
     u8 data[0];
 };
 #pragma pack(pop)
 
 uint16_t CalcReceiveChecksum(uint8_t* Buffer, uint16_t Len);
-void XorBuffer(AeContext* AeCtx, NetContext* SendCtx, ClientPacket* Packet);
-void UndoXorBuffer(AeContext* AeCtx, NetContext* SendCtx, ClientPacket* Packet);
-void CalcSendChecksum(ClientPacket* Packet);
+void XorBuffer(AeContext* AeCtx, NetContext* SendCtx, ClientPacket* Packet, bool UndoFailed);
+bool UndoXorBuffer(AeContext* AeCtx, NetContext* SendCtx, ClientPacket* Packet);
+u16 CalcSendChecksum(ClientPacket* Packet);
 void Send(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet);
 
 bool WriteToChatWindow(char* Message);

@@ -69,12 +69,10 @@ static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
 
     CheckKeys(&ctx->mod, ctx->key);
 
-    // if this isn't the first net
-    // or this packet doesn't use the expected format (never seen, maybe on startup?)
-    if (ctx->net.lastSendKey && len == sizeof(ClientPacket::header) + packet->header.size)
+    // ignore this packet if we our cached key isn't correct
+    // this may happen on the first send we read (our cache is null) or when switching servers (key change?)
+    if (len == sizeof(ClientPacket::header) + packet->header.size && UndoXorBuffer(&ctx->mod.ae, &ctx->net, packet))
     {
-        UndoXorBuffer(&ctx->mod.ae, &ctx->net, packet);
-
         for (u8 i = 0; i < ctx->count; i++)
         {
             CONTINUE_IF(!ctx->handlers[i].sendNotRecv);
@@ -87,8 +85,8 @@ static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
 
         if (!cancelSend)
         {
-            CalcSendChecksum(packet);
-            XorBuffer(&ctx->mod.ae, &ctx->net, packet);
+            packet->header.checksum = CalcSendChecksum(packet);
+            XorBuffer(&ctx->mod.ae, &ctx->net, packet, false);
         }
     }
 
@@ -97,6 +95,7 @@ static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
         len = ctx->net.send(s, buf, sizeof(ClientPacket::header) + packet->header.size, flags);
     }
 
+    // save the xor key so we can read the next send
     ctx->net.lastSendKey = *(int32_t*)(thisPtr + ctx->net.xorKeyOffset);
 
     return len;
