@@ -45,7 +45,7 @@ Shoot one ranged attack per step. Press tab to toggle.
 
 CMake and Git must both be accessible from the Windows PATH to build AEBoost.
 
-The Microsoft C/C++ compiler is also required (Visual Studio 2017+ recommended).
+The Microsoft C/C++ compiler is also required (Visual Studio 2019+ recommended).
 
 1. Run `build.bat`
 2. Optionally open `build/AEBoost.sln` to edit and build with Visual Studio.

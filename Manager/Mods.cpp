@@ -226,3 +226,6 @@ void RegisterForKeyCallback(MOD_KEY_CALLBACK Callback, int Key, u32 FixupValue)
 // disable click to move
 // keybinds
 // swap to other gear set
+
+// assist/defend pet toggle
+// clicking totem dismisses pets

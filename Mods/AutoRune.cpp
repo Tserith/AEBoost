@@ -4,7 +4,7 @@ static int __fastcall RuneSlotHook(Spells* Spells, int ThiscallFix, int RuneType
 {
     int index = 1;
 
-    if (RuneType >= 1452 && RuneType <= 1455)
+    if (RuneType >= RUNE_TYPE_OFFSET && RuneType <= RUNE_TYPE_OFFSET + 3)
     {
         return 1;
     }

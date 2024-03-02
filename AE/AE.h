@@ -36,15 +36,15 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.1"
-#define AE_BUILD 149
-#define GLOBAL_PTR (uint8_t**)0x73FDB0 // after ref to string containing "Launching"
-#define GLOBAL_SPELLS (Spells**)0x7A09BC // passed to rune function
-#define GLOBAL_INVENTORY (Inventory**)0x73FF74 // a few lines above "Send frequency" string
-#define GLOBAL_ITEMS (Items**)0x7A0928 // right above "Initialized Spell Manager" string
-#define GLOBAL_GET_OBJECT (GET_OBJECT_FUNC)0x408D50
+#define VERSION "1.0.2"
+#define AE_BUILD 192
+#define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
+#define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
+#define GLOBAL_INVENTORY (Inventory**)0x744074 // a few lines above "Send frequency" string
+#define GLOBAL_ITEMS (Items**)0x7A4A20 // right above "Initialized Spell Manager" string
+#define GLOBAL_GET_OBJECT (GET_OBJECT_FUNC)0x408C00
 #define XOR_KEY_OFFSET 0x4004C // offset used for key in xor function that calls net
-#define GLOBAL_CHAT (ChatManager**)0xB37C00 // search for "%s has died!\n" string
+#define GLOBAL_CHAT (ChatManager**)0xB3BD38 // a bit above "%s has died!\n" string
 #define SEND_IAT_ENTRY 15
 #define RECV_IAT_ENTRY 4
 #define RUNE_TYPE_OFFSET 0x5AC
