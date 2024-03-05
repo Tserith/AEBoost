@@ -1,6 +1,6 @@
 ## Download
 
-AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.2/AEBoost.zip). You may optionally build it yourself.
+AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.3/AEBoost.zip). You may optionally build it yourself.
 
 *Note: A relaunch of the game will disable any mod unless AEBoost is running with it and "Boost" selected.*
 
@@ -8,7 +8,7 @@ AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/dow
 
 ## PetAssist
 
-Pets default to assist mode.
+Pets default to assist mode. Press right alt to toggle with protect mode.
 
 *Note: This will not be displayed in the follower window.*
 

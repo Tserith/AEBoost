@@ -3,23 +3,25 @@
 struct PetAssistContext
 {
     u32 petId[2];
+    bool toggleMode;
 };
 
 // send here instead of inside recv hook so we don't break state
 static void PetAssistSend(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
     auto volatile ctx = (PetAssistContext*)FIXUP_VALUE;
+    PetMode mode = ctx->toggleMode ? PetMode::Protect : PetMode::Assist;
 
     if (ctx->petId[0])
     {
-        SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, ctx->petId[0]);
+        SetPetMode(&ModCtx->ae, NetCtx, mode, ctx->petId[0]);
 
         if (ctx->petId[1])
         {
-            SetPetMode(&ModCtx->ae, NetCtx, PetMode::Assist, ctx->petId[1]);
+            SetPetMode(&ModCtx->ae, NetCtx, mode, ctx->petId[1]);
         }
 
-        memset(ctx, 0, sizeof(*ctx));
+        memset(ctx->petId, 0, sizeof(ctx->petId));
     }
 }
 
@@ -48,6 +50,23 @@ static void PetAssistRecv(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* 
     }
 }
 
+static void ToggleAssist(ModContext* ModCtx, int Key)
+{
+    auto volatile ctx = (PetAssistContext*)FIXUP_VALUE;
+    char assist[] = { 'P', 'e', 't', 'A', 's', 's', 'i', 's', 't', '\0' };
+    char protect[] = { 'P', 'e', 't', 'P', 'r', 'o', 't', 'e', 'c', 't', '\0' };
+
+    ctx->toggleMode ^= 1;
+
+    if (ctx->toggleMode)
+    {
+        WriteToChatWindow(protect);
+    }
+    else
+    {
+        WriteToChatWindow(assist);
+    }
+}
 
 END_INJECT_CODE;
 
@@ -66,6 +85,9 @@ void InitPetAssist()
 
     RegisterForSendHook(PetAssistSend, remoteContext);
     RegisterForRecvHook(PetAssistRecv, remoteContext);
+    
+#define VK_RMENU            0xA5 // right alt
+    RegisterForKeyCallback(ToggleAssist, VK_RMENU, remoteContext);
 
 fail:
     return;
