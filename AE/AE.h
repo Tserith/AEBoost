@@ -36,8 +36,8 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.3"
-#define AE_BUILD 193
+#define VERSION "1.0.4"
+#define AE_BUILD 194
 #define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
 #define GLOBAL_INVENTORY (Inventory**)0x744074 // a few lines above "Send frequency" string
