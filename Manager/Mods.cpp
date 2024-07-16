@@ -5,6 +5,8 @@
 #pragma warning( disable : 6260)
 #define MAX_HANDLER_SIZE(HandlerType) (sizeof(HandlerType) + ((1 << 8 * sizeof(HandlerType::count)) * sizeof(HandlerType::handlers[0])))
 
+#define MSG_PEEK	2
+
 struct KeyHandlers
 {
     MOD_KEY_CALLBACK callback;
@@ -33,6 +35,8 @@ struct NetHookContext
     ModContext mod;
     KeyCallbackContext* key;
     NetContext net;
+    u8 recvBuf[0x1000];
+    bool recvSpoof;
     u8 count;
     NetHandlers handlers[0];
 };
@@ -104,33 +108,85 @@ static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
 static int __stdcall HookedRecv(u32 s, char* buf, int len, int flags)
 {
     auto volatile ctx = (NetHookContext*)FIXUP_VALUE;
-    auto packet = (ServerPacket*)buf;
     bool cancelRecv = false;
-    auto ret = 0;
+    int ret = 0;
+    int dataRet;
 
-    do
+    if (ctx->recvSpoof && MSG_PEEK != flags)
     {
-        CheckKeys(&ctx->mod, ctx->key);
-
-        cancelRecv = false;
-
-        ret = ctx->net.recv(s, buf, len, flags);
-
-        if (-1 != ret && len > 4)
+        memcpy(buf, ctx->recvBuf, len);
+        ctx->recvSpoof = false;
+        ret = len;
+    }
+    else
+    {
+        do
         {
-            // ignore the 4 byte header (every other packet)
-            for (u8 i = 0; i < ctx->count; i++)
+            CheckKeys(&ctx->mod, ctx->key);
+
+            cancelRecv = false;
+
+            ret = ctx->net.recv(s, buf, len, flags);
+
+            BREAK_IF(len != ret || MSG_PEEK == flags);
+
+            auto header = (AeHeader*)buf;
+
+            if (len == 4 && header->size && header->size < sizeof(ctx->recvBuf))
             {
-                CONTINUE_IF(ctx->handlers[i].sendNotRecv);
+                u16 bytesRead = 0;
 
-                ctx->handlers[i].recvHandler(&ctx->mod, &ctx->net, packet);
-                cancelRecv = !packet->size;
+                dataRet = ctx->net.recv(s, (char*)ctx->recvBuf, header->size, flags);
 
-                BREAK_IF(cancelRecv);
+                if (-1 != dataRet)
+                {
+                    while (bytesRead < header->size)
+                    {
+                        auto packet = (ServerPacket*)&ctx->recvBuf[bytesRead];
+                        auto originalPacketSize = packet->size;
+                        bool cancelPacket = false;
+
+                        for (u8 i = 0; i < ctx->count; i++)
+                        {
+                            CONTINUE_IF(ctx->handlers[i].sendNotRecv);
+
+                            ctx->handlers[i].recvHandler(&ctx->mod, &ctx->net, packet);
+                            if (!packet->size)
+                            {
+                                cancelPacket = true;
+                                header->size -= originalPacketSize;
+
+                                // safe with same buffer because destination is before source (see memmove)
+                                memcpy(&ctx->recvBuf[bytesRead], &ctx->recvBuf[bytesRead + originalPacketSize], header->size - bytesRead);
+                                break;
+                            }
+                        }
+
+                        if (!cancelPacket) // do not touch packet pointer since we may have changed the data!
+                        {
+                            bytesRead += originalPacketSize;
+                        }
+                    }
+
+                    if (header->size)
+                    {
+                        ctx->recvSpoof = true;
+
+                        // fix checksum in case we dropped a packet
+                        header->checksum = 0;
+                        for (u16 i = 0; i < header->size; i++)
+                        {
+                            header->checksum += ctx->recvBuf[i];
+                        }
+                    }
+                    else
+                    {
+                        cancelRecv = true;
+                    }
+                }
             }
-        }
-
-    } while (cancelRecv); // recv is blocking so just call recv again if we cancel it
+        } while (cancelRecv); // recv is blocking so just call recv again if we cancel it
+    }
 
     return ret;
 }
@@ -218,14 +274,3 @@ void RegisterForKeyCallback(MOD_KEY_CALLBACK Callback, int Key, u32 FixupValue)
 
     FixupCode(Callback, FixupValue);
 }
-
-// ideas:
-// delay potion/totem usage until after next hit
-// swap weapons before casting spell (spells always lit up)
-// keybind to equip last weapon
-// disable click to move
-// keybinds
-// swap to other gear set
-
-// assist/defend pet toggle
-// clicking totem dismisses pets

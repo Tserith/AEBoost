@@ -356,7 +356,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
     PROCESSENTRY32W process;
 
     const int windowWidth = 300;
-    const int windowHeight = 50 + ((sizeof(g_Mods) + 1) / 2) * 80;
+    const int windowHeight = 110 + ((sizeof(g_Mods) + 1) / 2) * 50;
     const char* windowName = "AE Boost";
 
     // don't allow two open at a time
@@ -458,7 +458,7 @@ if (!boosting && (temp || (mutex = CheckModNotEnabled(i)))) \
         }
         
         auto wasBoosting = boosting;
-        boosting = raylib::GuiToggle({80,((i/2) + (i%2))*40.0f + 70,140,40}, toggleText, wasBoosting);
+        boosting = raylib::GuiToggle({80,((i/2) + (i%2))*50.0f + 50,140,40}, toggleText, wasBoosting);
 
         if (!wasBoosting && boosting)
         {

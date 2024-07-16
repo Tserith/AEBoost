@@ -1,6 +1,6 @@
 #include <Mods.h>
 
-ClientPacket::ClientPacket(PetMode Mode, uint32_t PetId)
+void ClientPacket::SetPet(PetMode Mode, uint32_t PetId)
 {
     header.size = sizeof(AeBody::action) + sizeof(AeBody::SetPet);
     body.action = (uint8_t)Action::Pet;
@@ -12,7 +12,7 @@ ClientPacket::ClientPacket(PetMode Mode, uint32_t PetId)
     body.SetPet.zero[1] = 0;
     body.SetPet.zero[2] = 0;
 }
-ClientPacket::ClientPacket(uint8_t RuneSlot, uint32_t RuneItemId)
+void ClientPacket::ChangeRune(uint8_t RuneSlot, uint32_t RuneItemId)
 {
     header.size = sizeof(AeBody::action) + sizeof(AeBody::ChangeRune);
     body.action = (uint8_t)Action::Magic;
@@ -21,7 +21,7 @@ ClientPacket::ClientPacket(uint8_t RuneSlot, uint32_t RuneItemId)
     memcpy(&body.ChangeRune.runeItemId, &RuneItemId, sizeof(AeBody::ChangeRune.runeItemId));
     body.ChangeRune.runeSlot = RuneSlot;
 }
-ClientPacket::ClientPacket(uint32_t SpellId)
+void ClientPacket::SelectSpell(uint32_t SpellId)
 {
     header.size = sizeof(AeBody::action) + sizeof(AeBody::SelectSpell);
     body.action = (uint8_t)Action::Magic;
@@ -29,7 +29,7 @@ ClientPacket::ClientPacket(uint32_t SpellId)
     body.SelectSpell.magicType = (uint8_t)MagicType::SelectSpell;
     body.SelectSpell.spellId = SpellId;
 }
-ClientPacket::ClientPacket(uint32_t SpellId, uint32_t TargetId)
+void ClientPacket::CastSpell(uint32_t SpellId, uint32_t TargetId)
 {
     header.size = sizeof(AeBody::action) + sizeof(AeBody::CastSpell);
     body.action = (uint8_t)Action::Magic;
@@ -38,6 +38,32 @@ ClientPacket::ClientPacket(uint32_t SpellId, uint32_t TargetId)
     body.CastSpell.spellId = SpellId;
     memcpy(&body.CastSpell.targetId, &TargetId, sizeof(AeBody::CastSpell.targetId));
     memset(&body.CastSpell.idk, 0, sizeof(AeBody::CastSpell.idk));
+}
+void ClientPacket::UseItemOn(uint32_t Id)
+{
+    header.size = sizeof(AeBody::action) + sizeof(AeBody::Select);
+    body.action = (uint8_t)Action::UseItemOn;
+    
+    memcpy(&body.Select.id, &Id, sizeof(AeBody::Select.id));
+}
+void ClientPacket::SelectItem(uint32_t Id)
+{
+    header.size = sizeof(AeBody::action) + sizeof(AeBody::Select);
+    body.action = (uint8_t)Action::SelectItem;
+    
+    memcpy(&body.Select.id, &Id, sizeof(AeBody::Select.id));
+}
+void ClientPacket::DeselectItem()
+{
+    header.size = sizeof(AeBody::action);
+    body.action = (uint8_t)Action::DeselectItem;
+}
+void ClientPacket::Touch(uint32_t TargetId)
+{
+    header.size = sizeof(AeBody::action) + sizeof(AeBody::Select);
+    body.action = (uint8_t)Action::Touch;
+    
+    memcpy(&body.Select.id, &TargetId, sizeof(AeBody::Select.id));
 }
 
 uint16_t CalcReceiveChecksum(uint8_t* Buffer, uint16_t Len)
@@ -238,19 +264,25 @@ ContainerObject* FindContainerObjectOfType(AeContext* Ctx, int Type)
 
 void SetPetMode(AeContext* AeCtx, NetContext* NetCtx, PetMode Mode, uint32_t PetId)
 {
-    auto packet = ClientPacket(Mode, PetId);
+    ClientPacket packet;
+    
+    packet.SetPet(Mode, PetId);
     Send(AeCtx, NetCtx, &packet);
 }
 
 void ChangeRune(AeContext* AeCtx, NetContext* NetCtx, uint8_t RuneSlot, uint32_t itemId)
 {
-    auto packet = ClientPacket(RuneSlot, itemId);
+    ClientPacket packet;
+    
+    packet.ChangeRune(RuneSlot, itemId);
     Send(AeCtx, NetCtx, &packet);
 }
 
 void SelectSpell(AeContext* AeCtx, NetContext* NetCtx, uint32_t SpellId)
 {
-    auto packet = ClientPacket(SpellId); // select spell
+    ClientPacket packet;
+    
+    packet.SelectSpell(SpellId); // select spell
     Send(AeCtx, NetCtx, &packet);
 }
 
@@ -258,6 +290,42 @@ void CastSpell(AeContext* AeCtx, NetContext* NetCtx, uint32_t SpellId, uint32_t 
 {
     SelectSpell(AeCtx, NetCtx, SpellId);
 
-    auto packet = ClientPacket(SpellId, TargetId);
+    ClientPacket packet;
+    
+    packet.CastSpell(SpellId, TargetId);
+    Send(AeCtx, NetCtx, &packet);
+}
+
+void SelectItem(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId)
+{
+    ClientPacket packet;
+
+    packet.SelectItem(ItemId);
+    Send(AeCtx, NetCtx, &packet);
+}
+
+void DeselectItem(AeContext* AeCtx, NetContext* NetCtx)
+{
+    ClientPacket packet;
+
+    packet.DeselectItem();
+    Send(AeCtx, NetCtx, &packet);
+}
+
+void UseItemOn(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId, uint32_t TargetId)
+{
+    SelectItem(AeCtx, NetCtx, ItemId);
+    
+    ClientPacket packet;
+
+    packet.UseItemOn(TargetId);
+    Send(AeCtx, NetCtx, &packet);
+}
+
+void Touch(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId)
+{
+    ClientPacket packet;
+
+    packet.Touch(TargetId);
     Send(AeCtx, NetCtx, &packet);
 }

@@ -8,6 +8,10 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
+typedef int8_t i8;
+typedef int16_t i16;
+typedef int32_t i32;
+typedef int64_t i64;
 
 // note: make sure /0b0 is not used (default for debug builds) or
 // else __forceinline will not be honored and the target will crash
@@ -36,7 +40,7 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.5"
+#define VERSION "1.0.6"
 #define AE_BUILD 195
 #define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
@@ -110,7 +114,9 @@ struct Inventory
     float moveSpeed;
     float attackSpeed;
     int32_t toHit;
-    u8 unk5[172];
+    u8 unk5[124];
+    int targetId;
+    u8 unk6[44];
     int selectedItemId;
 };
 
@@ -199,11 +205,12 @@ struct NetContext
 
 enum class Action
 { // some are out of date
-    SelectPlayer = 0x2b,
-    UseGroundTool = 0x2c, 
+    Hello = 0xd,
+    UseItemOn = 0x2a,
+    UseGroundTool = 0x2b,
+    DeselectItem = 0x2c,
     Move = 0x2d,
-    UseItem = 0x2e,
-    SelectTable = 0x2f,
+    Touch = 0x2e,
     CombatMode = 0x32,
     SelectTarget = 0x33,
     DragItem = 0x37,
@@ -291,16 +298,20 @@ struct ClientPacket
     AeHeader header;
     AeBody body;
 
-    ClientPacket(PetMode Mode, uint32_t PetId);
-    ClientPacket(uint8_t RuneSlot, uint32_t RuneItemId);
-    ClientPacket(uint32_t SpellId);
-    ClientPacket(uint32_t SpellId, uint32_t TargetId);
+    void SetPet(PetMode Mode, uint32_t PetId);
+    void ChangeRune(uint8_t RuneSlot, uint32_t RuneItemId);
+    void SelectSpell(uint32_t SpellId);
+    void CastSpell(uint32_t SpellId, uint32_t TargetId);
+    void UseItemOn(uint32_t Id);
+    void SelectItem(uint32_t Id);
+    void DeselectItem();
+    void Touch(uint32_t TargetId);
 };
 
 struct ServerPacket
 {
     u8 action;
-    u32 size;
+    u32 size; // total size, not sizeof data
     u8 data[0];
 };
 #pragma pack(pop)
@@ -317,3 +328,7 @@ void SetPetMode(AeContext* AeCtx, NetContext* NetCtx, PetMode Mode, uint32_t Pet
 void ChangeRune(AeContext* AeCtx, NetContext* SendCtx, uint8_t RuneSlot, uint32_t itemId);
 void SelectSpell(AeContext* AeCtx, NetContext* SendCtx, uint32_t SpellId);
 void CastSpell(AeContext* AeCtx, NetContext* SendCtx, uint32_t SpellId, uint32_t TargetId);
+void SelectItem(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId);
+void DeselectItem(AeContext* AeCtx, NetContext* NetCtx);
+void UseItemOn(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId, uint32_t TargetId);
+void Touch(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId);

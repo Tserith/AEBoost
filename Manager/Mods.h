@@ -46,5 +46,5 @@ typedef void(*MOD_RECV_HOOK)(ModContext* ModCtx, NetContext* NetCtx, ServerPacke
 void AllocContext(void* Context, uint16_t ContextSize, u32* ContextAddr);
 void InlineHook(u8* Pattern, u8 PatternLen, void* Hook, u32 FixupValue);
 void RegisterForSendHook(MOD_SEND_HOOK Hook, u32 FixupValue);
-void RegisterForRecvHook(MOD_RECV_HOOK Hook, u32 FixupValue);
+void RegisterForRecvHook(MOD_RECV_HOOK Hook, u32 FixupValue); // do not send in a recv handler or you will likely break state
 void RegisterForKeyCallback(MOD_KEY_CALLBACK Callback, int Key, u32 FixupValue);
