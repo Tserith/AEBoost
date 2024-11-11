@@ -86,7 +86,7 @@ static void StepShoot(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Pack
                 if (ctx->enabled && ctx->hasTarget)
                 {
                     // get equipped item info
-                    weaponId = (*ModCtx->ae.inventory)->equippedWeaponId;
+                    weaponId = (*ModCtx->ae.manager)->equippedWeaponId;
                     if (!weaponId) return;
 
                     object = ModCtx->ae.getObjectFromId(&weaponId);
@@ -100,7 +100,7 @@ static void StepShoot(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Pack
 
                     // constant declared locally to prevent the compiler from making it a global
                     volatile u32 multiplier = 0x447A0000; // 1000.0f
-                    u32 timeToStepMs = float_f2i((*ModCtx->ae.inventory)->attackSpeed * *(float*)&multiplier) - 100;
+                    u32 timeToStepMs = float_f2i((*ModCtx->ae.manager)->attackSpeed * *(float*)&multiplier) - 100;
 
                     if (ModCtx->getTimeMs() >= ctx->lastShootTime + timeToStepMs)
                     {

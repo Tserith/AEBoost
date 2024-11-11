@@ -70,6 +70,12 @@ static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
     auto castSpell = packet;
     ContainerObject* rune = NULL;
     bool cancelSend = false;
+    
+    if (0 == *GLOBAL_MANAGER)
+    {
+        // a character isn't logged in!
+        return ctx->net.send(s, buf, len, flags);
+    }
 
     CheckKeys(&ctx->mod, ctx->key);
 
@@ -111,6 +117,12 @@ static int __stdcall HookedRecv(u32 s, char* buf, int len, int flags)
     bool cancelRecv = false;
     int ret = 0;
     int dataRet;
+
+    if (0 == *GLOBAL_MANAGER)
+    {
+        // a character isn't logged in!
+        return ctx->net.recv(s, buf, len, flags);
+    }
 
     if (ctx->recvSpoof && MSG_PEEK != flags)
     {
@@ -200,7 +212,7 @@ END_INJECT_CODE;
 static NetHookContext* g_NetHookContext = nullptr;
 static KeyCallbackContext* g_KeyCallbackContext = nullptr;
 
-void InitMods(bool* Mods)
+void InitMods(bool* Mods, u32 Pid, bool AlwaysFirstInject)
 {
     u32 netContextRemoteAddr = 0;
     u32 keyContextRemoteAddr = 0;
@@ -218,7 +230,7 @@ void InitMods(bool* Mods)
     g_NetHookContext->net.xorKeyOffset = XOR_KEY_OFFSET;
 
     int i = 0;
-#define MOD(Name) if (Mods[i] && !MarkModEnabled(i)) Init ## Name ## (); i++;
+#define MOD(Name) if (Mods[i] && (CheckModNotEnabled(Pid, i) || AlwaysFirstInject)) Init ## Name ## (); i++;
 #include <ModList.txt>
 
     AllocContext(g_KeyCallbackContext, MAX_HANDLER_SIZE(KeyCallbackContext), &keyContextRemoteAddr);
@@ -274,3 +286,14 @@ void RegisterForKeyCallback(MOD_KEY_CALLBACK Callback, int Key, u32 FixupValue)
 
     FixupCode(Callback, FixupValue);
 }
+
+// ideas:
+// delay potion/totem usage until after next hit
+// swap weapons before casting spell (spells always lit up)
+// keybind to equip last weapon
+// disable click to move
+// keybinds
+// swap to other gear set
+
+// new / command for targetting players
+// switch to best arrow type for target

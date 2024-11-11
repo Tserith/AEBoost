@@ -34,17 +34,20 @@ __forceinline void* memcpy(void* Dst, const void* Src, size_t Cnt)
     return Dst;
 }
 
+#define MIN(x, y) ((x) < (y) ? (x) : (y))
+#define MAX(x, y) ((x) > (y) ? (x) : (y))
+
 struct ChatManager;
 struct ObjectData;
 typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.6"
+#define VERSION "1.0.7"
 #define AE_BUILD 195
 #define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
-#define GLOBAL_INVENTORY (Inventory**)0x744074 // a few lines above "Send frequency" string
+#define GLOBAL_MANAGER (ObjectDataManager**)0x744074 // a few lines above "Send frequency" string
 #define GLOBAL_ITEMS (Items**)0x7A4A20 // right above "Initialized Spell Manager" string
 #define GLOBAL_GET_OBJECT (GET_OBJECT_FUNC)0x408C00
 #define XOR_KEY_OFFSET 0x4004C // offset used for key in xor function that calls net
@@ -101,14 +104,14 @@ struct Container
     u8 unk4[376];
 };
 
-struct Inventory
+struct ObjectDataManager
 {
     u8 unk[36];
     Container* containers;
     Container* containers2;
-    u8 unk2[604];
-    int32_t backpackId; // old
-    u8 unk3[624];
+    u8 unk2[636];
+    bool combatMode;
+    u8 unk3[595];
     unsigned int equippedWeaponId;
     u8 unk4[148];
     float moveSpeed;
@@ -116,8 +119,8 @@ struct Inventory
     int32_t toHit;
     u8 unk5[124];
     int targetId;
-    u8 unk6[44];
-    int selectedItemId;
+    u8 unk6[4];
+    bool targetProtection;
 };
 
 struct ObjectData
@@ -146,7 +149,9 @@ struct ItemInfo
   uint32_t w_cls;
   uint8_t unk3[8];
   double w_speed;
-  uint8_t unk4[344];
+  uint8_t unk4[152];
+  uint8_t ar_resitances[120]; // sic
+  uint8_t unk5[72];
 };
 
 struct Items
@@ -188,7 +193,7 @@ struct Spells
 
 struct AeContext
 {
-    Inventory** inventory;
+    ObjectDataManager** manager;
     Spells** spells;
     Items** items;
     uint8_t** gPtr;
@@ -213,15 +218,17 @@ enum class Action
     Touch = 0x2e,
     CombatMode = 0x32,
     SelectTarget = 0x33,
+    GrabItem = 0x36,
     DragItem = 0x37,
     MoveItem = 0x38,
     SplitItem = 0x39,
     UnequipItem = 0x3b,
     NotCombatMode = 0x3e,
-    GetInfo = 0x5b,
+    GetInfo = 0x5a,
     Trade = 0x8d,
     Pet = 0x95,
     Magic = 0x99,
+    Logout = 0x9b,
     SelectItem = 0x9c
 };
 
@@ -270,6 +277,11 @@ struct AeBody
         }SetPet;
         struct
         {
+            u8 idk;
+            uint8_t itemId[3];
+        }Drag;
+        struct
+        {
             uint8_t id[3];
         }Select;
         struct
@@ -293,6 +305,18 @@ struct AeBody
     };
 };
 
+struct PlayerPacketData
+{
+    u8 id[3];
+    u8 unk[3];
+    u32 hp1;
+    u32 hp2;
+    u8 unk2;
+    u8 lvl;
+    u8 unk6[7];
+    u8 name[];
+};
+
 struct ClientPacket
 {
     AeHeader header;
@@ -304,6 +328,7 @@ struct ClientPacket
     void CastSpell(uint32_t SpellId, uint32_t TargetId);
     void UseItemOn(uint32_t Id);
     void SelectItem(uint32_t Id);
+    void SelectTarget(uint32_t Id);
     void DeselectItem();
     void Touch(uint32_t TargetId);
 };
@@ -329,6 +354,7 @@ void ChangeRune(AeContext* AeCtx, NetContext* SendCtx, uint8_t RuneSlot, uint32_
 void SelectSpell(AeContext* AeCtx, NetContext* SendCtx, uint32_t SpellId);
 void CastSpell(AeContext* AeCtx, NetContext* SendCtx, uint32_t SpellId, uint32_t TargetId);
 void SelectItem(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId);
+void SelectTarget(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId);
 void DeselectItem(AeContext* AeCtx, NetContext* NetCtx);
 void UseItemOn(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId, uint32_t TargetId);
 void Touch(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId);

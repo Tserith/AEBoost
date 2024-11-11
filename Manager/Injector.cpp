@@ -49,12 +49,12 @@ bool g_Mods[] = {
 };
 
 // remember to close handle if not null (mod not boosting)
-static HANDLE CheckModNotEnabled(int ModId)
+static HANDLE CheckModNotEnabledHandle(u32 Pid, int ModId)
 {
     char temp[100];
     HANDLE mutex = nullptr;
 
-    snprintf(temp, sizeof(temp), "aeb%i", ModId);
+    snprintf(temp, sizeof(temp), "aeb%i_%i", ModId, Pid);
 
     mutex = CreateMutex(nullptr, false, temp);
 
@@ -67,30 +67,44 @@ static HANDLE CheckModNotEnabled(int ModId)
     return mutex;
 }
 
-bool MarkModEnabled(int ModId)
+bool CheckModNotEnabled(u32 Pid, int ModId)
 {
-    HANDLE mutex = CheckModNotEnabled(ModId);
+    HANDLE mutex = CheckModNotEnabledHandle(Pid, ModId);
 
     if (nullptr != mutex)
     {
-        DuplicateHandle(GetCurrentProcess(), mutex, g_Process, nullptr, 0, false, DUPLICATE_SAME_ACCESS);
         CloseHandle(mutex);
-        return false;
+        return true;
     }
 
-    return true;
+    return false;
 }
 
-static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
+static void MarkModEnabled(u32 Pid, int ModId)
+{
+    HANDLE process = OpenProcess(PROCESS_DUP_HANDLE, FALSE, Pid);
+    if (INVALID_HANDLE_VALUE == process)
+    {
+        UNEXPECTED_ERROR;
+        return;
+    }
+    HANDLE mutex = CheckModNotEnabledHandle(Pid, ModId);
+
+    DuplicateHandle(GetCurrentProcess(), mutex, process, nullptr, 0, false, DUPLICATE_SAME_ACCESS);
+    CloseHandle(mutex);
+
+    CloseHandle(process);
+}
+
+static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods, bool AlwaysFirstInject)
 {
     HANDLE snapshot;
-    MODULEENTRY32W module;
+    MODULEENTRY32W module = {0};
     SIZE_T bytesWritten = 0;
     bool modsToEnable = false;
-    HANDLE mutex = nullptr;
     u32 i = 0;
 
-#define MOD(Name) if (g_Mods[i] && (mutex = CheckModNotEnabled(i))) {CloseHandle(mutex); modsToEnable = true;} i++;
+#define MOD(Name) if (g_Mods[i] && (CheckModNotEnabled(Pid, i) || AlwaysFirstInject)) modsToEnable = true; i++;
 #include <ModList.txt>
 #undef MOD
     if (!modsToEnable)
@@ -107,7 +121,7 @@ static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
 
         do
         {
-            if (!wcscmp(module.szModule, Module))
+            if (!wcsncmp(module.szModule, Module, wcslen(Module)))
             {
                 memcpy(&g_TargetModule, &module, sizeof(module));
                 break;
@@ -119,6 +133,7 @@ static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
     else
     {
         UNEXPECTED_ERROR;
+        return -1;
     }
 
     if (0 == g_TargetModule.modBaseSize)
@@ -126,8 +141,8 @@ static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
         UNEXPECTED_ERROR;
         return -1;
     }
-
-    auto folderIndex = wcslen(g_TargetModule.szExePath) - (sizeof(L"AshenEmpires.exe") / sizeof(wchar_t));
+    
+    auto folderIndex = wcslen(g_TargetModule.szExePath) - (sizeof(TARGET_IMAGE_NAME) / sizeof(wchar_t));
     g_TargetModule.szExePath[folderIndex + 1] = L'\0';
 
     if (wcscat_s(
@@ -165,7 +180,7 @@ static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
         return -1;
     }
 
-    g_Process = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ | PROCESS_DUP_HANDLE, FALSE, Pid);
+    g_Process = OpenProcess(PROCESS_VM_OPERATION | PROCESS_VM_WRITE | PROCESS_VM_READ, FALSE, Pid);
     if (INVALID_HANDLE_VALUE == g_Process)
     {
         UNEXPECTED_ERROR;
@@ -192,7 +207,7 @@ static u32 DoInjection(LONG Pid, wchar_t* Module, bool* Mods)
         goto fail;
     }
 
-    InitMods(Mods);
+    InitMods(Mods, Pid, AlwaysFirstInject);
 
     return 0;
 fail:
@@ -207,7 +222,7 @@ void* GetRemoteCodeAddr(void* Func)
 
 void InitModContext(ModContext* Context)
 {
-    Context->ae.inventory = GLOBAL_INVENTORY;
+    Context->ae.manager = GLOBAL_MANAGER;
     Context->ae.spells = GLOBAL_SPELLS;
     Context->ae.items = GLOBAL_ITEMS;
     Context->ae.gPtr = GLOBAL_PTR;
@@ -367,20 +382,6 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         return 0;
     }
 
-    // which mods are currently enabled?
-    for (u16 i = 0; i < sizeof(g_Mods); i++)
-    {
-        auto mutex = CheckModNotEnabled(i);
-        if (mutex)
-        {
-            CloseHandle(mutex);
-        }
-        else
-        {
-            g_Mods[i] = true;
-        }
-    }
-
     raylib::SetConfigFlags(raylib::FLAG_WINDOW_UNDECORATED);
     raylib::InitWindow(windowWidth, windowHeight, windowName);
 
@@ -438,13 +439,36 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PSTR lpCmdLine,
         raylib::DrawText("Created by Inev", windowWidth - 87, windowHeight - 12, 10, raylib::MAGENTA);
 
         int i = 0;
-        HANDLE mutex = nullptr;
         bool temp;
 #define MOD(Name) temp = raylib::GuiCheckBox({ (i%2==1) * 135.0f + 35, (i / 2) * 50.0f + 45, 35, 35 }, ""#Name, g_Mods[i]); \
-if (!boosting && (temp || (mutex = CheckModNotEnabled(i)))) \
-    { if (mutex) CloseHandle(mutex); g_Mods[i] = temp; }i++; mutex = nullptr;
+if (!boosting) g_Mods[i] = temp; i++;
          #include <ModList.txt>
 #undef MOD
+
+        // update which mods are currently enabled across the system
+        snapshot = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
+        if (INVALID_HANDLE_VALUE != snapshot)
+        {
+            process.dwSize = sizeof(process);
+
+            Process32FirstW(snapshot, &process);
+
+            do
+            {
+                if (!wcscmp(process.szExeFile, TARGET_IMAGE_NAME))
+                {
+                    for (u16 i = 0; i < sizeof(g_Mods); i++)
+                    {
+                        if (!CheckModNotEnabled(process.th32ProcessID, i))
+                        {
+                            g_Mods[i] = true;
+                        }
+                    }
+                }
+            } while (Process32NextW(snapshot, &process));
+
+            CloseHandle(snapshot);
+        }
 
         auto toggleText = "";
 
@@ -474,9 +498,23 @@ if (!boosting && (temp || (mutex = CheckModNotEnabled(i)))) \
                 {
                     if (!wcscmp(process.szExeFile, TARGET_IMAGE_NAME))
                     {
-                        DoInjection(process.th32ProcessID, TARGET_IMAGE_NAME, g_Mods);
+                        DoInjection(process.th32ProcessID, TARGET_IMAGE_NAME, g_Mods, false);
                     }
                 } while (Process32NextW(snapshot, &process));
+                
+                // wait to mark here so all clients get the mod first
+                Process32FirstW(snapshot, &process);
+                do
+                {
+                    if (!wcscmp(process.szExeFile, TARGET_IMAGE_NAME))
+                    {
+                        i = 0;
+                        #define MOD(Name) if (g_Mods[i]) MarkModEnabled(process.th32ProcessID, i); i++;
+                        #include <ModList.txt>
+                        #undef MOD
+                    }
+                } while (Process32NextW(snapshot, &process));
+                
 
                 CloseHandle(snapshot);
             }
@@ -488,7 +526,12 @@ if (!boosting && (temp || (mutex = CheckModNotEnabled(i)))) \
             pid = newProcesses.CheckForImageName(TARGET_IMAGE_NAME);
             if (-1 != pid)
             {
-                DoInjection(pid, TARGET_IMAGE_NAME, g_Mods);
+                DoInjection(pid, TARGET_IMAGE_NAME, g_Mods, true);
+
+                i = 0;
+                #define MOD(Name) if (g_Mods[i]) MarkModEnabled(pid, i); i++;
+                #include <ModList.txt>
+                #undef MOD
             }
         }
 

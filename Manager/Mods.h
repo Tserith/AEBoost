@@ -43,6 +43,8 @@ typedef void(*MOD_KEY_CALLBACK)(ModContext* ModCtx, int Key);
 typedef void(*MOD_SEND_HOOK)(ModContext* ModCtx, NetContext* NetCtx, ClientPacket* Packet);
 typedef void(*MOD_RECV_HOOK)(ModContext* ModCtx, NetContext* NetCtx, ServerPacket* Packet);
 
+void* GetRemoteCodeAddr(void* Func);
+void FixupCode(void* Hook, u32 FixupValue);
 void AllocContext(void* Context, uint16_t ContextSize, u32* ContextAddr);
 void InlineHook(u8* Pattern, u8 PatternLen, void* Hook, u32 FixupValue);
 void RegisterForSendHook(MOD_SEND_HOOK Hook, u32 FixupValue);

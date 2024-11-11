@@ -53,6 +53,13 @@ void ClientPacket::SelectItem(uint32_t Id)
     
     memcpy(&body.Select.id, &Id, sizeof(AeBody::Select.id));
 }
+void ClientPacket::SelectTarget(uint32_t Id)
+{
+    header.size = sizeof(AeBody::action) + sizeof(AeBody::Select);
+    body.action = (uint8_t)Action::SelectTarget;
+    
+    memcpy(&body.Select.id, &Id, sizeof(AeBody::Select.id));
+}
 void ClientPacket::DeselectItem()
 {
     header.size = sizeof(AeBody::action);
@@ -241,7 +248,7 @@ bool WriteToChatWindow(char* Message)
 
 ContainerObject* FindContainerObjectOfType(AeContext* Ctx, int Type)
 {
-    for (auto i = (*Ctx->inventory)->containers; nullptr != i; i = i->next)
+    for (auto i = (*Ctx->manager)->containers; nullptr != i; i = i->next)
     {
         // is container? (hotslot bar object returns 0)
         // CContainerGUI vs HotSlots class
@@ -301,6 +308,14 @@ void SelectItem(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId)
     ClientPacket packet;
 
     packet.SelectItem(ItemId);
+    Send(AeCtx, NetCtx, &packet);
+}
+
+void SelectTarget(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId)
+{
+    ClientPacket packet;
+    
+    packet.SelectTarget(TargetId);
     Send(AeCtx, NetCtx, &packet);
 }
 
