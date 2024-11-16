@@ -19,6 +19,8 @@ typedef int(__cdecl* SNPRINTF)(char*, size_t, const char*, ...);
 typedef void(__stdcall* DEBUG_PRINT)(const char*);
 typedef u32(__stdcall* GET_TIME)();
 typedef u16(__stdcall* GET_KEY_STATE)(int Key);
+typedef void*(__stdcall* GET_FOREGROUND)();
+typedef void*(__stdcall* GET_ACTIVE)();
 
 struct ModContext
 {
@@ -27,6 +29,8 @@ struct ModContext
     DEBUG_PRINT debugPrint;
     GET_TIME getTimeMs;
     GET_KEY_STATE getAsyncKeyState;
+    GET_FOREGROUND getForeground;
+    GET_ACTIVE getActive;
     bool haveSaidHello;
 };
 

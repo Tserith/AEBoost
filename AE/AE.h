@@ -43,7 +43,7 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.7"
+#define VERSION "1.0.8"
 #define AE_BUILD 195
 #define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
@@ -141,17 +141,42 @@ enum class ItemCls
     Magic = 6
 };
 
+enum class ItemAmmo
+{
+    Arrow,
+    Bolt
+};
+
+// same order as char screen I'm dumb for doing this manually
+enum class ResitanceIndex
+{
+    Blunt = 1,
+    Pierce = 2,
+    Arrow = 4,
+    Nature = 6,
+    Soul = 7,
+    Body = 9,
+    Disease = 11
+};
+
 struct ItemInfo
 {
-  uint8_t unk[204];
+  uint8_t unk[168];
+  uint32_t w_ammo;
+  uint8_t unk2[32];
   uint32_t fam;
-  uint8_t unk2[156];
+  uint8_t unk3[36];
+  uint32_t r_str;
+  uint32_t r_int;
+  uint32_t r_dex;
+  uint32_t r_con;
+  uint8_t unk4[104];
   uint32_t w_cls;
-  uint8_t unk3[8];
+  uint8_t unk5[8];
   double w_speed;
-  uint8_t unk4[152];
-  uint8_t ar_resitances[120]; // sic
-  uint8_t unk5[72];
+  uint8_t unk6[152];
+  double ar_resitances[15]; // sic
+  uint8_t unk7[72];
 };
 
 struct Items
@@ -305,10 +330,18 @@ struct AeBody
     };
 };
 
+enum class PlayerDataRace
+{
+    Human = 0x41,
+    Orc = 0x42,
+    Elf = 0x44
+};
+
 struct PlayerPacketData
 {
     u8 id[3];
-    u8 unk[3];
+    u8 race;
+    u8 unk[2];
     u32 hp1;
     u32 hp2;
     u8 unk2;
@@ -358,3 +391,5 @@ void SelectTarget(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId);
 void DeselectItem(AeContext* AeCtx, NetContext* NetCtx);
 void UseItemOn(AeContext* AeCtx, NetContext* NetCtx, uint32_t ItemId, uint32_t TargetId);
 void Touch(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId);
+
+int float_f2i(float f);

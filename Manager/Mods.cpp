@@ -43,11 +43,14 @@ struct NetHookContext
 
 static void CheckKeys(ModContext* Mod, KeyCallbackContext* Key)
 {
+    void* window = Mod->getActive();
+
     for (u8 i = 0; i < Key->count; i++)
     {
         u32 time = Mod->getTimeMs();
 
         CONTINUE_IF(!Mod->getAsyncKeyState(Key->handlers[i].key));
+        CONTINUE_IF(Mod->getForeground() != window);
         CONTINUE_IF(time < Key->handlers[i].lastCalled + 250);
 
         Key->handlers[i].lastCalled = time;

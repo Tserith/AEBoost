@@ -1,6 +1,6 @@
 ## Download
 
-AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.5/AEBoost.zip). You may optionally build it yourself.
+AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.0.8/AEBoost.zip). You may optionally build it yourself.
 
 *Note: A relaunch of the game will disable any mod unless AEBoost is running with it and "Boost" selected.*
 
@@ -17,8 +17,6 @@ Pets default to assist mode. Press right alt to toggle with protect mode.
 ## AutoRune
 
 Spells can be freely cast between rune types. Rune swaps are done automatically when casting a spell of a different type or when low on charges.
-
-*Note: Your current spell will be deselected if a rune change was required for the cast.*
 
 ![](Media/autorune.gif)
 

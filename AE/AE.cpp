@@ -344,3 +344,44 @@ void Touch(AeContext* AeCtx, NetContext* NetCtx, uint32_t TargetId)
     packet.Touch(TargetId);
     Send(AeCtx, NetCtx, &packet);
 }
+
+// https://onestepcode.com/float-to-int-c/
+#define NAN 0x80000000
+#define BIAS 127
+#define K 8
+#define N 23
+/* Compute (int) f.
+ * If conversion causes overflow or f is NaN, return 0x80000000
+ */
+typedef unsigned float_bits;
+int float_f2i(float f) {
+    float_bits* fb = (float_bits*)&f;
+    unsigned s = *fb >> (K + N);
+    unsigned exp = *fb >> N & 0xFF;
+    unsigned frac = *fb & 0x7FFFFF;
+
+    /* Denormalized values round to 0 */
+    if (exp == 0)
+        return 0;
+    /* f is NaN */
+    if (exp == 0xFF)
+        return NAN;
+    /* Normalized values */
+    int x;
+    int E = exp - BIAS;
+    /* Normalized value less than 0, return 0 */
+    if (E < 0)
+        return 0;
+    /* Overflow condition */
+    if (E > 30)
+        return NAN;
+    x = 1 << E;
+    if (E < N)
+        x |= frac >> (N - E);
+    else
+        x |= frac << (E - N);
+    /* Negative values */
+    if (s == 1)
+        x = ~x + 1;
+    return x;
+}

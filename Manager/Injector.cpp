@@ -231,6 +231,8 @@ void InitModContext(ModContext* Context)
     Context->debugPrint = (DEBUG_PRINT)GetProcAddress(GetModuleHandleA("kernel32.dll"), "OutputDebugStringA");
     Context->getTimeMs = (GET_TIME)GetProcAddress(GetModuleHandleA("kernel32.dll"), "GetTickCount");
     Context->getAsyncKeyState = (GET_KEY_STATE)GetProcAddress(GetModuleHandleA("user32.dll"), "GetAsyncKeyState");
+    Context->getForeground = (GET_FOREGROUND)GetProcAddress(GetModuleHandleA("user32.dll"), "GetForegroundWindow");
+    Context->getActive = (GET_ACTIVE)GetProcAddress(GetModuleHandleA("user32.dll"), "GetActiveWindow");
     Context->haveSaidHello = false;
 }
 
