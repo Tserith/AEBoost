@@ -43,15 +43,15 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.0.8"
-#define AE_BUILD 195
-#define GLOBAL_PTR (uint8_t**)0x743EB0 // after ref to string containing "Launching"
-#define GLOBAL_SPELLS (Spells**)0x7A4AB0 // passed to rune function
-#define GLOBAL_MANAGER (ObjectDataManager**)0x744074 // a few lines above "Send frequency" string
-#define GLOBAL_ITEMS (Items**)0x7A4A20 // right above "Initialized Spell Manager" string
-#define GLOBAL_GET_OBJECT (GET_OBJECT_FUNC)0x408C00
+#define VERSION "1.1.0"
+#define AE_BUILD 217
+#define GLOBAL_PTR (uint8_t**)0x747D50 // after ref to string containing "Launching"
+#define GLOBAL_SPELLS (Spells**)0x7A8950 // passed to rune function
+#define GLOBAL_MANAGER (ObjectDataManager**)0x747F14 // a few lines above "Send frequency" string
+#define GLOBAL_ITEMS (Items**)0x7A88C0 // right above "Initialized Spell Manager" string
+#define GLOBAL_GET_OBJECT (GET_OBJECT_FUNC)0x408DF0 // called at end of case with "NMSG_TARGET_HEALTH" string
 #define XOR_KEY_OFFSET 0x4004C // offset used for key in xor function that calls net
-#define GLOBAL_CHAT (ChatManager**)0xB3BD38 // a bit above "%s has died!\n" string
+#define GLOBAL_CHAT (ChatManager**)0xB3FBD8 // a bit above "%s has died!\n" string
 #define SEND_IAT_ENTRY 15
 #define RECV_IAT_ENTRY 4
 #define RUNE_TYPE_OFFSET 0x5AC
@@ -110,16 +110,23 @@ struct ObjectDataManager
     Container* containers;
     Container* containers2;
     u8 unk2[636];
-    bool combatMode;
-    u8 unk3[595];
-    unsigned int equippedWeaponId;
-    u8 unk4[148];
+    bool combatMode; // 680
+    u8 unk3[87];
+    u8 guildName[64]; // idk length
+    u8 unk4[496];
+    u32 equippedAmmoId; // 1328
+    u32 equippedIdk[2];
+    u32 equippedWeaponId; // 1340
+    u8 unk5[148];
     float moveSpeed;
     float attackSpeed;
     int32_t toHit;
-    u8 unk5[124];
-    int targetId;
-    u8 unk6[4];
+    u8 unk6[12];
+    bool poisoned;
+    bool diseased;
+    u8 unk7[110];
+    int targetId; // casting sets this and does not restore the old value
+    u8 unk8[4];
     bool targetProtection;
 };
 
@@ -176,7 +183,7 @@ struct ItemInfo
   double w_speed;
   uint8_t unk6[152];
   double ar_resitances[15]; // sic
-  uint8_t unk7[72];
+  uint8_t unk7[80];
 };
 
 struct Items
