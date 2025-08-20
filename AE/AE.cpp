@@ -104,7 +104,7 @@ u16 CalcSendChecksum(ClientPacket* Packet)
 void XorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet, bool UndoFailed)
 {
     auto buf = (uint8_t*)Packet + sizeof(AeHeader);
-    auto thisPtr = &(*AeCtx->gPtr)[0x10];
+    auto thisPtr = &(*AeCtx->gPtr)[GLOBAL_PTR_KEY_OFFSET];
     int32_t key = 0;
 
     if (UndoFailed)
@@ -152,7 +152,7 @@ void XorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet, bool 
 bool UndoXorBuffer(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
 {
     auto buf = (uint8_t*)Packet + sizeof(AeHeader);
-    auto thisPtr = &(*AeCtx->gPtr)[0x10];
+    auto thisPtr = &(*AeCtx->gPtr)[GLOBAL_PTR_KEY_OFFSET];
     auto key = NetCtx->lastSendKey;
     auto len = Packet->header.size;
 
@@ -209,7 +209,7 @@ void Send(AeContext* AeCtx, NetContext* NetCtx, ClientPacket* Packet)
     Packet->header.checksum = CalcSendChecksum(Packet);
     XorBuffer(AeCtx, NetCtx, Packet, false);
 
-    auto s = *(u32*)(&(*AeCtx->gPtr)[0x10] + NetCtx->xorKeyOffset - 0x30 + 0x10);
+    auto s = *(u32*)(&(*AeCtx->gPtr)[GLOBAL_PTR_KEY_OFFSET] + NetCtx->xorKeyOffset - 0x30 + 0x10);
     if (s != -1)
     {
         auto result = NetCtx->send(s, (const char*)Packet, sizeof(AeHeader) + Packet->header.size, 0);

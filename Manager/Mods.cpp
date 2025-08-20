@@ -68,7 +68,7 @@ static void CheckKeys(ModContext* Mod, KeyCallbackContext* Key)
 static int __stdcall HookedSend(u32 s, char* buf, int len, int flags)
 {
     auto volatile ctx = (NetHookContext*)FIXUP_VALUE;
-    auto thisPtr = &(*ctx->mod.ae.gPtr)[0x10];
+    auto thisPtr = &(*ctx->mod.ae.gPtr)[GLOBAL_PTR_KEY_OFFSET];
     auto packet = (ClientPacket*)buf;
     auto castSpell = packet;
     ContainerObject* rune = NULL;
