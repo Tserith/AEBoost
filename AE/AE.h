@@ -43,8 +43,8 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.1.3"
-#define AE_BUILD 224
+#define VERSION "1.1.4"
+#define AE_BUILD 226
 #define GLOBAL_PTR (uint8_t**)0x747D50 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A8950 // passed to rune function
 #define GLOBAL_MANAGER (ObjectDataManager**)0x747F14 // a few lines above "Send frequency" string
@@ -114,10 +114,10 @@ struct ObjectDataManager
     bool combatMode; // 680
     u8 unk3[87];
     u8 guildName[64]; // idk length
-    u8 unk4[496];
-    u32 equippedAmmoId; // 1328
+    u8 unk4[516];
+    u32 equippedAmmoId; // 1348
     u32 equippedIdk[2];
-    u32 equippedWeaponId; // 1340
+    u32 equippedWeaponId; // 1360
     u8 unk5[148];
     float moveSpeed;
     float attackSpeed;
