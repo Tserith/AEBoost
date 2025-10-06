@@ -43,8 +43,8 @@ typedef ObjectData* (__thiscall* GET_OBJECT_FUNC)(u32* Id);
 
 // these values will need to be updated for every build of the client
 // until I'm not lazy enough to actually write heuristics
-#define VERSION "1.1.4"
-#define AE_BUILD 226
+#define VERSION "1.1.5"
+#define AE_BUILD 227
 #define GLOBAL_PTR (uint8_t**)0x747D50 // after ref to string containing "Launching"
 #define GLOBAL_SPELLS (Spells**)0x7A8950 // passed to rune function
 #define GLOBAL_MANAGER (ObjectDataManager**)0x747F14 // a few lines above "Send frequency" string

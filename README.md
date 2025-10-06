@@ -1,6 +1,6 @@
 ## Download
 
-AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.1.4/AEBoost.zip). You may optionally build it yourself.
+AEBoost can be downloaded [here](https://github.com/Tserith/AEBoost/releases/download/1.1.5/AEBoost.zip). You may optionally build it yourself.
 
 *Note: A relaunch of the game will disable any mod unless AEBoost is running with it and "Boost" selected.*
 
